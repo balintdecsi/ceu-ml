@@ -1,22 +1,33 @@
 [project]
-channels = ["conda-forge"]
 name = "ceu-ml"
+channels = ["conda-forge"]
 platforms = ["osx-arm64"]
 version = "0.1.0"
 
-[tasks]
-
 [dependencies]
-python = "3.12.*"
+python = "*"
+playwright = "*"
+nbconvert-webpdf = "*"
+nbconvert = "*"
 jupyter = "*"
 pandas = ">=2.2.3,<3"
-numpy = ">=2.2.3,<3"
-matplotlib = ">=3.10.0,<4"
-scikit-learn = ">=1.6.1,<2"
-kagglehub = ">=0.3.8,<0.4"
+matplotlib = ">=3.9.4,<4"
 seaborn = ">=0.13.2,<0.14"
-nbconvert = ">=7.16.6,<8"
-playwright = ">=1.50.1,<2"
-nbconvert-webpdf = ">=7.16.6,<8"
+scikit-learn = ">=1.6.1,<2"
+
+[environments]
+ml = ["ml"]
+dl = ["dl"]
+
+[feature.ml.dependencies]
+python = "3.12.*"
+numpy = ">=2.2.4,<3"
+kagglehub = ">=0.3.8,<0.4"
 xgboost = ">=2.1.4,<3"
-tensorflow = ">=2.18.0,<3"
+tensorflow = "*"
+
+[feature.dl.dependencies]
+python = "3.9.*"
+
+[feature.dl.pypi-dependencies]
+tensorflow = "*"

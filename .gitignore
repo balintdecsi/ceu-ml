@@ -10,3 +10,9 @@ data/hotdog
 data/leonardo_rabbit.jpg
 daenv_macos.yml
 data/*
+!data/economic_indicators/
+!data/economic_indicators/**
+!data/nyc_taxi/
+!data/nyc_taxi/**
+!data/uni_students/
+!data/uni_students/**

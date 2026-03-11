@@ -220,7 +220,6 @@ class UniStudentsWorkflowTests(unittest.TestCase):
         self.assertEqual(list(y_train), ['Withdrawn', 'Fail', 'Pass', 'Pass', 'Withdrawn', 'Fail'])
         self.assertEqual(list(test_ids), [10])
         self.assertListEqual(list(X_train.columns), list(X_test.columns))
-        self.assertIn('click_trend', X_train.columns)
         self.assertIn('has_no_assessments_available', X_train.columns)
         self.assertIn('behavioral_score_missing', X_train.columns)
         self.assertNotIn('region_South', X_train.columns)

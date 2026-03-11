@@ -40,18 +40,6 @@ def _is_binary(series):
 def _add_engineered_features(df):
     df = df.copy()
 
-    week_cols = [col for col in ['clicks_week1', 'clicks_week2', 'clicks_week3', 'clicks_week4'] if col in df.columns]
-    if len(week_cols) == 4:
-        df['click_trend'] = df['clicks_week4'] - df['clicks_week1']
-        df['click_ratio_w4_w1'] = df['clicks_week4'] / (df['clicks_week1'] + 1)
-        df['engagement_consistency'] = df[week_cols].std(axis=1)
-        df['early_engagement'] = df['clicks_week1'] + df['clicks_week2']
-        df['late_engagement'] = df['clicks_week3'] + df['clicks_week4']
-        df['early_vs_late'] = df['early_engagement'] / (df['late_engagement'] + 1)
-
-    if 'num_active_days' in df.columns:
-        df['active_day_ratio'] = df['num_active_days'] / 28.0
-
     if 'code_module' in df.columns:
         structural_missing = df['code_module'].isin(STRUCTURAL_NO_ASSESSMENT_MODULES).astype(int)
         df['has_no_assessments_available'] = structural_missing

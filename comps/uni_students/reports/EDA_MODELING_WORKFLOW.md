@@ -19,7 +19,7 @@ python -m uv run python comps/uni_students/scripts/run_extended_analysis.py
 
 3. **Weekly click trajectories**
    - Looking at week-by-week engagement captures decline vs. steady activity better than total clicks alone.
-   - The preprocessing script now adds trend, ratio, and consistency features from the weekly click columns.
+   - The quick workflow keeps this in the EDA report so it can inform model choice without adding extra feature-engineering overhead.
 
 4. **`last_access_day` and submission behavior**
    - Previous model sheets showed `last_access_day` as the strongest signal.
@@ -32,12 +32,12 @@ python -m uv run python comps/uni_students/scripts/run_extended_analysis.py
 ## Modeling workflow
 
 - **Tuned XGBoost**
-  - Uses the engineered, unscaled feature matrix.
+  - Uses the cleaned, unscaled feature matrix.
   - Runs a small grid search with **5-fold stratified CV**.
   - Writes `models_info/TunedXGBoost_info.md` and `submissions/submission_xgb_tuned.csv`.
 
 - **Neural network (MLPClassifier)**
-  - Uses the same engineered features but applies scaling inside a sklearn pipeline.
+  - Uses the same cleaned feature matrix but applies scaling inside a sklearn pipeline.
   - Runs a compact hyperparameter search with **5-fold stratified CV** and early stopping.
   - Writes `models_info/NeuralNetwork_info.md` and `submissions/submission_mlp.csv`.
 

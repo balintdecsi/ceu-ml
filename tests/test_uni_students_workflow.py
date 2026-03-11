@@ -12,7 +12,7 @@ SCRIPTS_DIR = REPO_ROOT / 'comps' / 'uni_students' / 'scripts'
 sys.path.insert(0, str(SCRIPTS_DIR))
 
 from preprocess_utils import load_and_preprocess_data  # noqa: E402
-from run_extended_analysis import bootstrap_confidence_interval, generate_extended_eda_report, parse_args  # noqa: E402
+from run_extended_analysis import bootstrap_confidence_interval, generate_extended_eda_report, main, parse_args  # noqa: E402
 
 
 def _build_train_frame():
@@ -251,12 +251,28 @@ class UniStudentsWorkflowTests(unittest.TestCase):
         self.assertGreaterEqual(low, 0.0)
         self.assertLessEqual(high, 1.0)
 
-    def test_cli_defaults_disable_mlp_and_use_three_folds(self):
+    def test_cli_defaults_enable_mlp_and_use_three_folds(self):
         with patch.object(sys, 'argv', ['run_extended_analysis.py']):
             args = parse_args()
 
-        self.assertFalse(args.include_mlp)
+        self.assertTrue(args.include_mlp)
         self.assertEqual(args.cv_folds, 3)
+
+    def test_cli_skip_mlp_disables_mlp(self):
+        with patch.object(sys, 'argv', ['run_extended_analysis.py', '--skip-mlp']):
+            args = parse_args()
+
+        self.assertFalse(args.include_mlp)
+
+    def test_main_uses_default_mlp_setting(self):
+        with (
+            patch.object(sys, 'argv', ['run_extended_analysis.py']),
+            patch('run_extended_analysis.generate_extended_eda_report'),
+            patch('run_extended_analysis.run_model_suite') as mock_run_model_suite,
+        ):
+            main()
+
+        self.assertTrue(mock_run_model_suite.call_args.kwargs['include_mlp'])
 
     def test_cli_rejects_invalid_fold_count(self):
         with patch.object(sys, 'argv', ['run_extended_analysis.py', '--cv-folds', '1']):

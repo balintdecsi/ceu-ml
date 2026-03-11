@@ -11,14 +11,14 @@ This default command is optimized for a quick submission run:
 
 - generates the markdown EDA summary
 - runs a compact **3-fold tuned XGBoost** search
-- writes `submission_xgb_tuned.csv`
-- skips the MLP by default to stay within a sub-15-minute budget
+- runs the neural-network baseline as well
+- writes `submission_xgb_tuned.csv` and `submission_mlp.csv`
 
-If there is extra time and you also want the neural-network baseline:
+If you only want the faster XGBoost-only path:
 
 ```bash
 cd /home/runner/work/ceu-ml/ceu-ml
-python -m uv run python comps/uni_students/scripts/run_extended_analysis.py --include-mlp
+python -m uv run python comps/uni_students/scripts/run_extended_analysis.py --skip-mlp
 ```
 
 ## EDA steps and why they matter
@@ -53,7 +53,8 @@ python -m uv run python comps/uni_students/scripts/run_extended_analysis.py --in
 - **Neural network (MLPClassifier)**
   - Uses the same cleaned feature matrix but applies scaling inside a sklearn pipeline.
   - Runs a compact hyperparameter search with stratified CV and early stopping.
-  - It is opt-in via `--include-mlp` so the default run stays fast enough for deadline-driven submission generation.
+  - It is included by default so the standard workflow produces both submission files.
+  - Use `--skip-mlp` when you want the faster XGBoost-only path.
   - Writes `models_info/NeuralNetwork_info.md` and `submissions/submission_mlp.csv`.
 
 - **Bootstrap summary**

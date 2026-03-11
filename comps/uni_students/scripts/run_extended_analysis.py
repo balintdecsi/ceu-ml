@@ -222,7 +222,7 @@ def run_model_suite(
     models_info_dir,
     submissions_dir,
     *,
-    include_mlp=False,
+    include_mlp=True,
     cv_folds=3,
 ):
     models_info_dir = Path(models_info_dir)
@@ -361,7 +361,9 @@ def parse_args():
     parser.add_argument('--eda-output', default=str(COMP_DIR / 'reports/EXTENDED_EDA_REPORT.md'))
     parser.add_argument('--models-info-dir', default=str(COMP_DIR / 'models_info'))
     parser.add_argument('--submissions-dir', default=str(COMP_DIR / 'submissions'))
-    parser.add_argument('--include-mlp', action='store_true', help='Also train the MLP baseline. Disabled by default to keep the run fast.')
+    parser.set_defaults(include_mlp=True)
+    parser.add_argument('--include-mlp', dest='include_mlp', action='store_true', help='Also train the MLP baseline alongside tuned XGBoost (default).')
+    parser.add_argument('--skip-mlp', dest='include_mlp', action='store_false', help='Skip the MLP baseline for a faster XGBoost-only run.')
     parser.add_argument('--cv-folds', type=_cv_folds_arg, default=3, help='Number of stratified CV folds. Defaults to 3 for a sub-15-minute run.')
     return parser.parse_args()
 

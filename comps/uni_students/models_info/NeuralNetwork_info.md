@@ -8,7 +8,7 @@ This model is optional and only trained when `--include-mlp` is passed.
 - Uses `StandardScaler` inside a sklearn pipeline before the MLP
 
 ## Validation setup
-- 5-fold stratified cross-validation
+- 3-fold stratified cross-validation by default for the quick optional baseline
 - Early stopping enabled during training
 - Compact grid search over hidden-layer sizes, learning-rate initialization, and L2 regularization
 

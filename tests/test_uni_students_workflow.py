@@ -2,6 +2,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import pandas as pd
 
@@ -250,16 +251,17 @@ class UniStudentsWorkflowTests(unittest.TestCase):
         self.assertGreaterEqual(low, 0.0)
         self.assertLessEqual(high, 1.0)
 
-    def test_cli_defaults_prefer_fast_xgb_run(self):
-        original_argv = sys.argv
-        try:
-            sys.argv = ['run_extended_analysis.py']
+    def test_cli_defaults_disable_mlp_and_use_three_folds(self):
+        with patch.object(sys, 'argv', ['run_extended_analysis.py']):
             args = parse_args()
-        finally:
-            sys.argv = original_argv
 
         self.assertFalse(args.include_mlp)
         self.assertEqual(args.cv_folds, 3)
+
+    def test_cli_rejects_invalid_fold_count(self):
+        with patch.object(sys, 'argv', ['run_extended_analysis.py', '--cv-folds', '1']):
+            with self.assertRaises(SystemExit):
+                parse_args()
 
 
 if __name__ == '__main__':

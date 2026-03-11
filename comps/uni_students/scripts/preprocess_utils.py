@@ -15,6 +15,8 @@ CAT_COLS = [
     'age_band',
     'disability',
 ]
+# The competition notes indicate modules EEE/GGG have no assessments due in the first 28 days,
+# so missing assessment features there are structural rather than behavioral.
 STRUCTURAL_NO_ASSESSMENT_MODULES = {'EEE', 'GGG'}
 
 

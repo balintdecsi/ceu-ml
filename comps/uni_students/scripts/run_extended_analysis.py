@@ -20,6 +20,13 @@ COMP_DIR = SCRIPT_DIR.parent
 REPO_ROOT = COMP_DIR.parent.parent
 
 
+def _cv_folds_arg(value):
+    folds = int(value)
+    if folds < 2:
+        raise argparse.ArgumentTypeError('cv-folds must be at least 2')
+    return folds
+
+
 def bootstrap_confidence_interval(scores, n_bootstrap=2000, random_state=RANDOM_STATE):
     rng = np.random.default_rng(random_state)
     scores = np.asarray(scores, dtype=float)
@@ -163,16 +170,16 @@ def _extract_fold_scores(search):
     return [float(search.cv_results_[key][best_index]) for key in split_keys]
 
 
-def _write_model_info(output_path, title, best_params, fold_scores, report, extra_lines=None):
+def _write_model_info(output_path, title, best_params, fold_scores, report, *, cv_folds, extra_lines=None):
     ci_low, ci_high = bootstrap_confidence_interval(fold_scores)
     mean_score = float(np.mean(fold_scores))
-    std_score = float(np.std(fold_scores, ddof=0))
+    std_score = float(np.std(fold_scores, ddof=1))
 
     lines = [
         f"# {title}",
         "",
         "## Validation Strategy",
-        "- 5-fold stratified cross-validation",
+        f"- {cv_folds}-fold stratified cross-validation",
         "- Bootstrap confidence interval computed from the fold-level accuracies",
         "",
         "## Best Hyperparameters",
@@ -244,6 +251,9 @@ def run_model_suite(
             n_jobs=-1,
         ),
         param_grid={
+            # Keep the grid intentionally small so the default submission workflow stays under
+            # the time budget: tree depth and child weight are searched, while tree count,
+            # learning rate, subsampling, and column subsampling stay fixed to sensible defaults.
             'n_estimators': [250],
             'max_depth': [4, 6],
             'learning_rate': [0.05],
@@ -278,6 +288,7 @@ def run_model_suite(
         xgb_search.best_params_,
         xgb_fold_scores,
         xgb_report,
+        cv_folds=cv_folds,
         extra_lines=top_features,
     )
 
@@ -326,6 +337,7 @@ def run_model_suite(
             mlp_search.best_params_,
             mlp_fold_scores,
             mlp_report,
+            cv_folds=cv_folds,
             extra_lines=[
                 "## Architecture Notes",
                 "- Input features come from the engineered preprocessing pipeline.",
@@ -350,7 +362,7 @@ def parse_args():
     parser.add_argument('--models-info-dir', default=str(COMP_DIR / 'models_info'))
     parser.add_argument('--submissions-dir', default=str(COMP_DIR / 'submissions'))
     parser.add_argument('--include-mlp', action='store_true', help='Also train the MLP baseline. Disabled by default to keep the run fast.')
-    parser.add_argument('--cv-folds', type=int, default=3, help='Number of stratified CV folds. Defaults to 3 for a sub-15-minute run.')
+    parser.add_argument('--cv-folds', type=_cv_folds_arg, default=3, help='Number of stratified CV folds. Defaults to 3 for a sub-15-minute run.')
     return parser.parse_args()
 
 

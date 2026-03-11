@@ -11,7 +11,7 @@ SCRIPTS_DIR = REPO_ROOT / 'comps' / 'uni_students' / 'scripts'
 sys.path.insert(0, str(SCRIPTS_DIR))
 
 from preprocess_utils import load_and_preprocess_data  # noqa: E402
-from run_extended_analysis import bootstrap_confidence_interval, generate_extended_eda_report  # noqa: E402
+from run_extended_analysis import bootstrap_confidence_interval, generate_extended_eda_report, parse_args  # noqa: E402
 
 
 def _build_train_frame():
@@ -249,6 +249,17 @@ class UniStudentsWorkflowTests(unittest.TestCase):
         self.assertLessEqual(low, high)
         self.assertGreaterEqual(low, 0.0)
         self.assertLessEqual(high, 1.0)
+
+    def test_cli_defaults_prefer_fast_xgb_run(self):
+        original_argv = sys.argv
+        try:
+            sys.argv = ['run_extended_analysis.py']
+            args = parse_args()
+        finally:
+            sys.argv = original_argv
+
+        self.assertFalse(args.include_mlp)
+        self.assertEqual(args.cv_folds, 3)
 
 
 if __name__ == '__main__':

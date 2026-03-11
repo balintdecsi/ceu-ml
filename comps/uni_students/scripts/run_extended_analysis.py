@@ -1,4 +1,5 @@
 import argparse
+import time
 from pathlib import Path
 
 import numpy as np
@@ -208,7 +209,15 @@ def _write_model_info(output_path, title, best_params, fold_scores, report, extr
     Path(output_path).write_text("\n".join(lines), encoding='utf-8')
 
 
-def run_model_suite(train_path, test_path, models_info_dir, submissions_dir):
+def run_model_suite(
+    train_path,
+    test_path,
+    models_info_dir,
+    submissions_dir,
+    *,
+    include_mlp=False,
+    cv_folds=3,
+):
     models_info_dir = Path(models_info_dir)
     submissions_dir = Path(submissions_dir)
     models_info_dir.mkdir(parents=True, exist_ok=True)
@@ -221,10 +230,11 @@ def run_model_suite(train_path, test_path, models_info_dir, submissions_dir):
         add_engineered_features=True,
     )
 
-    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=RANDOM_STATE)
+    cv = StratifiedKFold(n_splits=cv_folds, shuffle=True, random_state=RANDOM_STATE)
     label_encoder = LabelEncoder()
     y_encoded = label_encoder.fit_transform(y_train)
 
+    xgb_start = time.perf_counter()
     xgb_search = GridSearchCV(
         estimator=XGBClassifier(
             objective='multi:softprob',
@@ -234,9 +244,9 @@ def run_model_suite(train_path, test_path, models_info_dir, submissions_dir):
             n_jobs=-1,
         ),
         param_grid={
-            'n_estimators': [300, 500],
+            'n_estimators': [250],
             'max_depth': [4, 6],
-            'learning_rate': [0.03, 0.05],
+            'learning_rate': [0.05],
             'subsample': [0.8],
             'colsample_bytree': [0.8],
             'min_child_weight': [1, 3],
@@ -276,56 +286,60 @@ def run_model_suite(train_path, test_path, models_info_dir, submissions_dir):
         submissions_dir / 'submission_xgb_tuned.csv',
         index=False,
     )
+    print(f"Tuned XGBoost search + fit completed in {time.perf_counter() - xgb_start:.1f}s")
 
-    mlp_search = GridSearchCV(
-        estimator=Pipeline(
-            [
-                ('scaler', StandardScaler()),
-                (
-                    'mlp',
-                    MLPClassifier(
-                        max_iter=400,
-                        early_stopping=True,
-                        random_state=RANDOM_STATE,
+    if include_mlp:
+        mlp_start = time.perf_counter()
+        mlp_search = GridSearchCV(
+            estimator=Pipeline(
+                [
+                    ('scaler', StandardScaler()),
+                    (
+                        'mlp',
+                        MLPClassifier(
+                            max_iter=250,
+                            early_stopping=True,
+                            random_state=RANDOM_STATE,
+                        ),
                     ),
-                ),
-            ]
-        ),
-        param_grid={
-            'mlp__hidden_layer_sizes': [(128, 64), (64, 32)],
-            'mlp__alpha': [1e-4, 1e-3],
-            'mlp__learning_rate_init': [1e-3, 5e-4],
-        },
-        scoring='accuracy',
-        cv=cv,
-        n_jobs=1,
-        refit=True,
-    )
-    mlp_search.fit(X_tree, y_encoded)
-    best_mlp = mlp_search.best_estimator_
-    mlp_fold_scores = _extract_fold_scores(mlp_search)
-    mlp_oof = label_encoder.inverse_transform(cross_val_predict(best_mlp, X_tree, y_encoded, cv=cv, method='predict'))
-    mlp_report = classification_report(y_train, mlp_oof)
+                ]
+            ),
+            param_grid={
+                'mlp__hidden_layer_sizes': [(128, 64), (64, 32)],
+                'mlp__alpha': [1e-4],
+                'mlp__learning_rate_init': [1e-3],
+            },
+            scoring='accuracy',
+            cv=cv,
+            n_jobs=1,
+            refit=True,
+        )
+        mlp_search.fit(X_tree, y_encoded)
+        best_mlp = mlp_search.best_estimator_
+        mlp_fold_scores = _extract_fold_scores(mlp_search)
+        mlp_oof = label_encoder.inverse_transform(cross_val_predict(best_mlp, X_tree, y_encoded, cv=cv, method='predict'))
+        mlp_report = classification_report(y_train, mlp_oof)
 
-    _write_model_info(
-        models_info_dir / 'NeuralNetwork_info.md',
-        'Neural Network (MLPClassifier)',
-        mlp_search.best_params_,
-        mlp_fold_scores,
-        mlp_report,
-        extra_lines=[
-            "## Architecture Notes",
-            "- Input features come from the engineered preprocessing pipeline.",
-            "- StandardScaler is applied inside the sklearn pipeline before the MLP.",
-            "- Early stopping is enabled to limit overfitting on the tabular feature matrix.",
-        ],
-    )
+        _write_model_info(
+            models_info_dir / 'NeuralNetwork_info.md',
+            'Neural Network (MLPClassifier)',
+            mlp_search.best_params_,
+            mlp_fold_scores,
+            mlp_report,
+            extra_lines=[
+                "## Architecture Notes",
+                "- Input features come from the engineered preprocessing pipeline.",
+                "- StandardScaler is applied inside the sklearn pipeline before the MLP.",
+                "- Early stopping is enabled to limit overfitting on the tabular feature matrix.",
+            ],
+        )
 
-    mlp_test_predictions = label_encoder.inverse_transform(best_mlp.predict(X_test_tree))
-    pd.DataFrame({'id': test_ids, 'outcome': mlp_test_predictions}).to_csv(
-        submissions_dir / 'submission_mlp.csv',
-        index=False,
-    )
+        mlp_test_predictions = label_encoder.inverse_transform(best_mlp.predict(X_test_tree))
+        pd.DataFrame({'id': test_ids, 'outcome': mlp_test_predictions}).to_csv(
+            submissions_dir / 'submission_mlp.csv',
+            index=False,
+        )
+        print(f"MLP search + fit completed in {time.perf_counter() - mlp_start:.1f}s")
 
 
 def parse_args():
@@ -335,13 +349,22 @@ def parse_args():
     parser.add_argument('--eda-output', default=str(COMP_DIR / 'reports/EXTENDED_EDA_REPORT.md'))
     parser.add_argument('--models-info-dir', default=str(COMP_DIR / 'models_info'))
     parser.add_argument('--submissions-dir', default=str(COMP_DIR / 'submissions'))
+    parser.add_argument('--include-mlp', action='store_true', help='Also train the MLP baseline. Disabled by default to keep the run fast.')
+    parser.add_argument('--cv-folds', type=int, default=3, help='Number of stratified CV folds. Defaults to 3 for a sub-15-minute run.')
     return parser.parse_args()
 
 
 def main():
     args = parse_args()
     generate_extended_eda_report(args.train_path, args.eda_output)
-    run_model_suite(args.train_path, args.test_path, args.models_info_dir, args.submissions_dir)
+    run_model_suite(
+        args.train_path,
+        args.test_path,
+        args.models_info_dir,
+        args.submissions_dir,
+        include_mlp=args.include_mlp,
+        cv_folds=args.cv_folds,
+    )
 
 
 if __name__ == '__main__':

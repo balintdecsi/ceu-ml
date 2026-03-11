@@ -2,6 +2,10 @@
 *.pdf
 .DS_Store
 */.DS_Store
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
 data/hotdog
 data/leonardo_rabbit.jpg
 daenv_macos.yml

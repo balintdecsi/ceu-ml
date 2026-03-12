@@ -11,7 +11,6 @@ data/nyc_taxi/taxi_*.csv
 
 
 # internal materials
-daenv_macos.yml
 CLAUDE.md
 session_mapping.md
 quiz*

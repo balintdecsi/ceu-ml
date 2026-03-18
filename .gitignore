@@ -5,4 +5,15 @@
 data/hotdog
 data/leonardo_rabbit.jpg
 daenv_macos.yml
+
+# NYC Taxi dataset - students download and generate these
 data/nyc_taxi/*
+
+# internal materials
+CLAUDE.md
+session_mapping.md
+quiz*
+plans/
+experiments/
+
+data/oulad/*
